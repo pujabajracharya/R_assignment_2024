@@ -1,0 +1,309 @@
+# Puja's R Assignment 
+## Part 1 Replicating my UNIX Assignment in R
+## Data Inspection
+### Loading all the required packages
+```
+library(tidyverse)
+library(ggplot2)
+library(ggsignif)
+library(readr)
+```
+### Loading the fang_et_al_genotypes.txt file to the object fang and viewing the file which says that this file has 2782 Rows and 986 Columns
+```
+url_1 <- "https://raw.githubusercontent.com/EEOB-BioData/BCB546_Spring2024/main/assignments/UNIX_Assignment/fang_et_al_genotypes.txt"
+fang <- read_tsv(url_1)
+view(fang)
+```
+### Loading the snp_position.txt file to the object snp and viewing the file which says that this file has 983 Rows and 15 Columns
+```
+url_2 <- "https://raw.githubusercontent.com/EEOB-BioData/BCB546_Spring2024/main/assignments/UNIX_Assignment/snp_position.txt"
+snp <- read_tsv(url_2)
+view(snp)
+```
+### Viewing the size of both files hence fang_et_al_genotypes.txt is 23124584 bytes and snp_position.txt is 359384 bytes
+```
+object.size(fang)
+object.size(snp)
+```
+### Looking at the column names in both files  
+```
+fang_col <- colnames(fang)
+fang_col
+```
+```
+snp_col <- colnames(snp)
+snp_col
+```
+# Data Processing
+## Maize and Teosinte Data
+### Selecting all the lines from fang_et_al_genotypes.txt file where the value in the third column is "ZMMIL", "ZMMLR" and "ZMMMR" for Maize. 
+```
+maize <- filter(fang, `Group` %in% c('ZMMLR','ZMMMR','ZMMIL'))
+view(maize)
+```
+### Similarly selecting all the lines from fang_et_al_genotypes.txt file where the value in the third column is "ZMPBA", "ZMPIL" and "ZMPJA"
+```
+teosinte <- filter(fang, `Group` %in% c('ZMPBA','ZMPIL','ZMPJA'))
+view(teosinte)
+```
+### Transposing both the teosinte and maize data so that the columns become rows
+```
+trans_maize <- t(maize)
+trans_teosinte <- t(teosinte)
+view(trans_maize)
+view(trans_teosinte)
+```
+### Triming the unnecessary rows from both the transposed files and making the header
+```
+trim_teosinte <- row_to_names(trans_teosinte, 3, remove_row = TRUE, remove_rows_above = TRUE)
+view(trim_teosinte)
+```
+```
+trim_maize <- row_to_names(trans_maize, 3, remove_row = TRUE, remove_rows_above = TRUE)
+view(trim_maize)
+```
+
+## Snp Position data
+### Extracting the first, third and the fourth column from the snp_position.txt file so that I have the column SNP_ID, chromosome and Position
+```
+snp_cut <- select(snp, c("SNP_ID", "Chromosome", "Position"))
+view(snp_cut)
+```
+### Joining the trimed maize and teosinte data with the extracted snp data
+```
+teosinte_snp <- cbind(snp_cut, trim_teosinte)
+maize_snp <- cbind(snp_cut, trim_maize)
+view(teosinte_snp)
+view(maize_snp)
+```
+### Removing the data having unknown and multiple chromosome from both the joined dataframe teosinte_snp and maize_snp.
+```
+teosinte_snp_a <- subset(teosinte_snp, Chromosome!="unknown" & Chromosome!="multiple")
+maize_snp_a <- subset(maize_snp, Chromosome!="unknown" & Chromosome!="multiple")
+view(teosinte_snp_a)
+view(maize_snp_a)
+```
+### Similarly, removing the data having multiple position from both the dataframe teosinte_snp_a and maize_snp_a
+```
+teosinte_snp_ab <- subset(teosinte_snp_a, Position!="multiple")
+maize_snp_ab <- subset(maize_snp_a, Position!="multiple")
+view(teosinte_snp_ab)
+view(maize_snp_ab)
+```
+### Converting the Position column from character to numeric so as to sort the existing file
+```
+teosinte_snp$Position = as.numeric(as.character(teosinte_snp$Position))
+is.numeric(teosinte_snp$Position)
+teosinte_check <- teosinte_snp[order(teosinte_snp$Position),]
+```
+```
+maize_snp$Position = as.numeric(as.character(maize_snp$Position))
+is.numeric(maize_snp$Position)
+maize_check <- maize_snp[order(maize_snp$Position),]
+```
+### Performing reverse sorting and replacing "?" with "-" for both the maize and teosinte data
+```
+teosinte_sort <- data.frame(lapply(teosinte_check, gsub, pattern = "[?]", replacement = "-"))
+maize_sort <- data.frame(lapply(maize_check, gsub, pattern = "[?]", replacement = "-"))
+maize_sort$Position = as.numeric(as.character(maize_sort$Position))
+teosinte_sort$Position = as.numeric(as.character(teosinte_sort$Position))
+maize_rev_sort <- maize_sort[order(rev(maize_sort$Position)),]
+teosinte_rev_sort <- teosinte_sort[order(rev(teosinte_sort$Position)),]
+maize_check$Position = as.numeric(as.character(maize_check$Position))
+teosinte_check$Position = as.numeric(as.character(teosinte_check$Position))
+view(maize_rev_sort)
+```
+### Creating 10 files 1 for each chromosome with SNPs ordered based on increasing position values and with missing data encoded by the symbol "?" for MAize
+```
+maize_increase_1 <- subset(maize_check, Chromosome == "1")
+write.csv(maize_increase_1, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_inc_1.csv", row.names = FALSE)
+maize_increase_2 <- subset(maize_check, Chromosome == "2")
+write.csv(maize_increase_2, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_2.csv", row.names = FALSE)
+maize_increase_3 <- subset(maize_check, Chromosome == "3")
+write.csv(maize_increase_3, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_3.csv", row.names = FALSE)
+maize_increase_4 <- subset(maize_check, Chromosome == "4")
+write.csv(maize_increase_4, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_4.csv", row.names = FALSE)
+maize_increase_5 <- subset(maize_check, Chromosome == "5")
+write.csv(maize_increase_5, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_5.csv", row.names = FALSE)
+maize_increase_6 <- subset(maize_check, Chromosome == "6")
+write.csv(maize_increase_6, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_6.csv", row.names = FALSE)
+maize_increase_7 <- subset(maize_check, Chromosome == "7")
+write.csv(maize_increase_7, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_7.csv", row.names = FALSE)
+maize_increase_8 <- subset(maize_check, Chromosome == "8")
+write.csv(maize_increase_8, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_8.csv", row.names = FALSE)
+maize_increase_9 <- subset(maize_check, Chromosome == "9")
+write.csv(maize_increase_9, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_9.csv", row.names = FALSE)
+maize_increase_10 <- subset(maize_check, Chromosome == "10")
+write.csv(maize_increase_10, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/MAize_files/maize_inc_10.csv", row.names = FALSE)
+```
+### Creating 10 files 1 for each chromosome with SNPs ordered based on decreasing position values and with missing data encoded by the symbol "-" for MAize
+```
+maize_decrease_1 <- subset(maize_rev_sort, Chromosome == "1")
+write.csv(maize_decrease_1, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_1.csv", row.names = FALSE)
+maize_decrease_2 <- subset(maize_rev_sort, Chromosome == "2")
+write.csv(maize_decrease_2, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_2.csv", row.names = FALSE)
+maize_decrease_3 <- subset(maize_rev_sort, Chromosome == "3")
+write.csv(maize_decrease_3, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_3.csv", row.names = FALSE)
+maize_decrease_4 <- subset(maize_rev_sort, Chromosome == "4")
+write.csv(maize_decrease_4, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_4.csv", row.names = FALSE)
+maize_decrease_5 <- subset(maize_rev_sort, Chromosome == "5")
+write.csv(maize_decrease_5, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_5.csv", row.names = FALSE)
+maize_decrease_6 <- subset(maize_rev_sort, Chromosome == "6")
+write.csv(maize_decrease_6, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_6.csv", row.names = FALSE)
+maize_decrease_7 <- subset(maize_rev_sort, Chromosome == "7")
+write.csv(maize_decrease_7, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_7.csv", row.names = FALSE)
+maize_decrease_8 <- subset(maize_rev_sort, Chromosome == "8")
+write.csv(maize_decrease_8, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_8.csv", row.names = FALSE)
+maize_decrease_9 <- subset(maize_rev_sort, Chromosome == "9")
+write.csv(maize_decrease_9, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_9.csv", row.names = FALSE)
+maize_decrease_10 <- subset(maize_rev_sort, Chromosome == "10")
+write.csv(maize_decrease_10, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Maize_files/maize_dec_10.csv", row.names = FALSE)
+```
+### Creating 10 files 1 for each chromosome with SNPs ordered based on increasing position values and with missing data encoded by the symbol "?" for Teosinte
+```
+teosinte_increase_1 <- subset(teosinte_check, Chromosome == "1")
+write.csv(teosinte_increase_1, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_1.csv", row.names = FALSE)
+teosinte_increase_2 <- subset(teosinte_check, Chromosome == "2")
+write.csv(teosinte_increase_2, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_2.csv", row.names = FALSE)
+teosinte_increase_3 <- subset(teosinte_check, Chromosome == "3")
+write.csv(teosinte_increase_3, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_3.csv", row.names = FALSE)
+teosinte_increase_4 <- subset(teosinte_check, Chromosome == "4")
+write.csv(teosinte_increase_4, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_4.csv", row.names = FALSE)
+teosinte_increase_5 <- subset(teosinte_check, Chromosome == "5")
+write.csv(teosinte_increase_5, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_5.csv", row.names = FALSE)
+teosinte_increase_6 <- subset(teosinte_check, Chromosome == "6")
+write.csv(teosinte_increase_6, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_6.csv", row.names = FALSE)
+teosinte_increase_7 <- subset(teosinte_check, Chromosome == "7")
+write.csv(teosinte_increase_7, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_7.csv", row.names = FALSE)
+teosinte_increase_8 <- subset(teosinte_check, Chromosome == "8")
+write.csv(teosinte_increase_8, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_8.csv", row.names = FALSE)
+teosinte_increase_9 <- subset(teosinte_check, Chromosome == "9")
+write.csv(teosinte_increase_9, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_9.csv", row.names = FALSE)
+teosinte_increase_10 <- subset(teosinte_check, Chromosome == "10")
+write.csv(teosinte_increase_10, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/teosinte_inc_10.csv", row.names = FALSE)
+```
+### Creating 10 files 1 for each chromosome with SNPs ordered based on decreasing position values and with missing data encoded by the symbol "-" for Teosinte
+```
+teosinte_decrease_1 <- subset(teosinte_rev_sort, Chromosome == "1")
+write.csv(teosinte_decrease_1, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_1.csv", row.names = FALSE)
+teosinte_decrease_2 <- subset(teosinte_rev_sort, Chromosome == "2")
+write.csv(teosinte_decrease_2, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_2.csv", row.names = FALSE)
+teosinte_decrease_3 <- subset(teosinte_rev_sort, Chromosome == "3")
+write.csv(teosinte_decrease_3, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_3.csv", row.names = FALSE)
+teosinte_decrease_4 <- subset(teosinte_rev_sort, Chromosome == "4")
+write.csv(teosinte_decrease_4, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_4.csv", row.names = FALSE)
+teosinte_decrease_5 <- subset(teosinte_rev_sort, Chromosome == "5")
+write.csv(teosinte_decrease_5, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_5.csv", row.names = FALSE)
+teosinte_decrease_6 <- subset(teosinte_rev_sort, Chromosome == "6")
+write.csv(teosinte_decrease_6, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_6.csv", row.names = FALSE)
+teosinte_decrease_7 <- subset(teosinte_rev_sort, Chromosome == "7")
+write.csv(teosinte_decrease_7, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_7.csv", row.names = FALSE)
+teosinte_decrease_8 <- subset(teosinte_rev_sort, Chromosome == "8")
+write.csv(teosinte_decrease_8, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_8.csv", row.names = FALSE)
+teosinte_decrease_9 <- subset(teosinte_rev_sort, Chromosome == "9")
+write.csv(teosinte_decrease_9, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_9.csv", row.names = FALSE)
+teosinte_decrease_10 <- subset(teosinte_rev_sort, Chromosome == "10")
+write.csv(teosinte_decrease_10, "/Users/pujabajracharya/Desktop/Puja_R_assignment/GitHub/Teosinte_files/maize_dec_10.csv", row.names = FALSE)
+```
+## Part 2 Visualization
+### Copying original data frames
+```
+maize_data <- maize_rev_sort
+teosinte_data <- teosinte_rev_sort
+```
+### Converting "Position" to character and then to numeric
+```
+maize_data$Position <- as.character(as.numeric(maize_data$Position))
+teosinte_data$Position <- as.character(as.numeric(teosinte_data$Position))
+```
+### Reshaping dataframe using pivot_longer
+```
+maize_pivot <- maize_data %>% pivot_longer(!Chromosome, names_to = "Position", values_to = "BP")
+teosinte_pivot <- teosinte_data %>% pivot_longer(!Chromosome, names_to = "Position", values_to = "BP")
+```
+### Converting "Chromosome" to numeric
+```
+maize_pivot$Chromosome <- as.numeric(as.character(maize_pivot$Chromosome))
+teosinte_pivot$Chromosome <- as.numeric(as.character(teosinte_pivot$Chromosome))
+```
+### Creating a species column in both maize_pivot and teosinte_pivot
+```
+maize_pivot <- maize_pivot %>% mutate(Species = "Maize")
+teosinte_pivot <- teosinte_pivot %>% mutate(Species = "Teosinte")
+view(maize_pivot)
+view(teosinte_pivot)
+```
+### Combining these two maize_pivot & teosinte_pivot dataframe
+```
+maize_teosinte <- bind_rows(maize_pivot, teosinte_pivot) %>%
+  select(Chromosome, Position, Species) %>%
+  mutate(Chromnumber = Chromosome)
+view(maize_teosinte)
+is.numeric(maize_teosinte$Chromosome)
+maize_teosinte$Chromosome = as.character(as.numeric(maize_teosinte$Chromosome))
+```
+### Creating a plot to visualize the distribution of chromosome by Species
+```
+ggplot(maize_teosinte, aes(x = Chromosome, fill = Species, color = Species)) +
+  geom_bar(bins = 10, position = "dodge")
+```
+### Creating a file to find the homozygous and heterozygous samples
+### Creating a new dataframe from the original dataframe "fang" by selecting the rows with group name 'ZMMLR', 'ZMMMR', 'ZMMIL', 'ZMPBA', 'ZMPIL', and 'ZMPJA'. Then transposing and manipulating the data then joining with the cut snp data
+```
+overall_mt <- filter(fang, `Group` %in% c('ZMMLR','ZMMMR','ZMMIL','ZMPBA','ZMPIL','ZMPJA'))
+trans_overall_mt <- t(overall_mt)
+trim_overall_mt <- row_to_names(trans_overall_mt, 3, remove_row = TRUE, remove_rows_above = TRUE)
+bind_snp_overall_mt <- cbind(snp_cut, trim_overall_mt)
+view(bind_snp_overall_mt)
+```
+### Removing the rows where the chromosome is "unknown" and "multiple" and also Position is "multiple"
+```
+trim_overall_mt <- subset(bind_snp_overall_mt, Chromosome != "unknown" & Chromosome != "multiple")
+bind_snp_mt <- subset(trim_overall_mt, Position != "multiple")
+```
+### Using pivot_longer to reshaping the data by transforming columns 2 to 2524 into a long format and removing the first and second rows from the reshaped data frame
+```
+pivot_mt <- pivot_longer(bind_snp_mt, c(2:2524), names_to = "Sample", values_to = "NT")
+pivot_mt_trim <- pivot_mt[-c(1, 2), ]
+```
+### Creating a new variable "allelism" based on the value of nucleotides (NT). Assuming "Homozygous" if the value is "A/A", "T/T", "G/G", "C/C", or "-/-" else other.
+```
+mt_df <- pivot_mt_trim
+mt_df$allelism = ifelse(mt_df$NT %in% c("A/A", "T/T", "C/C", "G/G", "-/-"), "Homozygous",
+                   ifelse(mt_df$NT %in% c("A/B", "T/B", "C/B", "G/B", "-/B"), "Heterozygous",
+                          "Other"))
+```
+### Using the str_extract to extract "Group" information from the Sample column
+```
+allelism <- mt_df
+allelism$Group <- str_extract(allelism$Sample,"(\\w+)")
+head(allelism)
+```
+### Filtering out the row where the group is "Chromosome" or "Position"
+```
+genetic_alleslism <- allelism
+genetic_alleslism$Group <- str_extract(genetic_alleslism$Sample,"(\\w+)")
+gen_a <- filter(genetic_alleslism, Group != "Chromosome")
+gen_b <- filter(genetic_alleslism, Group != "Position")
+```
+### Using ggplot to observe the proportion of homozygous and other sites in each group
+```
+ggplot(gen_b, aes(x = Group, fill = allelism, color = allelism)) +
+  geom_bar(bins = 10, position = "dodge")
+```
+### Creating another plot of my own to visualize and compare the proportion of homozygous and other in maize and teosinte.
+```
+gen_own <- gen_b
+gen_own$Species = ifelse(gen_own$Group %in% c('ZMMLR', 'ZMMMR', 'ZMMIL'), "Maize",
+                         ifelse(gen_own$Group %in% c('ZMPBA', 'ZMPIL', 'ZMPJA'), "Teosinte", NA))
+
+ggplot(gen_own, aes(x = Species, fill = allelism, color = allelism)) + 
+  geom_bar(position = "dodge") +
+  labs(title = "Genotype Distribution on Maize and Teosinte",
+       x = "Species",
+       y = "Count",
+       fill = "Allelism",
+       color = "Allelism") +
+  theme_minimal()
+```
+
